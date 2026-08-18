@@ -1,0 +1,66 @@
+{
+  "package": "com.hrk.tgwear",
+  "name": "TG Wear",
+  "versionName": "0.1.0",
+  "versionCode": 1,
+  "minPlatformVersion": 1100,
+  "icon": "/common/icon.png",
+  "simulationVersion": "default",
+  "deviceTypeList": [
+    "watch"
+  ],
+  "features": [
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+      "name": "system.prompt"
+    },
+    {
+      "name": "system.interconnect"
+    },
+    {
+      "name": "system.app"
+    },
+    {
+      "name": "system.device"
+    },
+    {
+      "name": "system.vibrator"
+    },
+    {
+      "name": "system.brightness"
+    },
+    {
+      "name": "system.battery"
+    }
+  ],
+  "config": {
+    "logLevel": "log",
+    "designWidth": 212
+  },
+  "router": {
+    "entry": "pages/splash",
+    "pages": {
+      "pages/splash": {
+        "component": "splash",
+        "launchMode": "singleTask"
+      },
+      "pages/chats": {
+        "component": "chats"
+      },
+      "pages/chat": {
+        "component": "chat"
+      },
+      "pages/setting": {
+        "component": "setting"
+      }
+    }
+  },
+  "display": {
+    "backgroundColor": "#000000"
+  }
+}

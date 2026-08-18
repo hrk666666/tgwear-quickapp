@@ -1,7 +1,7 @@
 <script>
-import interconn from './src/utils/interconn'
-import api from './src/utils/api'
-import store from './src/utils/store'
+import interconn from './utils/interconn'
+import api from './utils/api'
+import store from './utils/store'
 
 export default {
   async onCreate() {

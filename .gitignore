@@ -6,6 +6,7 @@ dist/
 # IDE / 系统
 .idea/
 .vscode/
+.trae/
 *.iml
 *.swp
 .DS_Store

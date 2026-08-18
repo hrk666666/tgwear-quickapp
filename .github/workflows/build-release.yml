@@ -27,20 +27,29 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: '**/package.json'
 
-      # 小米 Vela 快应用官方工具链
-      # @aiot-toolkit/hap 是小米提供的 hap 打包工具
-      - name: Install hap-toolkit
+      # 小米 Vela 快应用官方工具链：aiot-toolkit
+      # 项目结构对齐 https://github.com/youshen2/com.bandbbs.ebook
+      # manifest.json / app.ux 都在 src/ 下（aiot-toolkit 标准布局）
+      - name: Install dependencies
         run: |
-          npm install -g @aiot-toolkit/hap
-          hap --version || true
+          npm install
+          npx aiot --version 2>&1 || true
+
+      # 下载 DrKLO/Telegram 的 launcher 图标作为应用图标
+      # 源: mipmap-xxxhdpi/ic_launcher.png (192x192)
+      # 目标: src/common/icon.png（与 manifest.json 的 icon 字段一致）
+      - name: Download Telegram icon
+        run: |
+          curl -sL -o src/common/icon.png \
+            "https://raw.githubusercontent.com/DrKLO/Telegram/release-11.4.2-5469/TMessagesProj/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+          ls -lh src/common/icon.png
+          file src/common/icon.png
 
       # 验证签名文件存在
       - name: Verify signing materials
         run: |
           ls -la sign/debug/ sign/release/
-          # 简单校验 pem 格式
           for f in sign/debug/private.pem sign/debug/certificate.pem \
                    sign/release/private.pem sign/release/certificate.pem; do
             if [ ! -f "$f" ]; then
@@ -50,19 +59,40 @@ jobs:
             head -1 "$f"
           done
 
+      # 校验 aiot-toolkit 标准项目结构
+      - name: Verify project structure
+        run: |
+          echo "=== root ==="
+          ls -la
+          echo "=== src/ ==="
+          ls -la src/
+          echo "=== src/manifest.json head ==="
+          head -5 src/manifest.json
+          echo "=== src/app.ux head ==="
+          head -3 src/app.ux
+
       # 编译并签名 RPK
-      # hap build 默认输出到 dist/，使用 --sign 指定签名目录
-      # --debug 用 debug 签名，--release 用 release 签名
+      # aiot-toolkit 期望 src/manifest.json 和 src/app.ux（已在 src/ 下，无需复制）
       - name: Build release RPK
         run: |
-          hap build --release \
-            --sign ./sign/release \
-            --private-key ./sign/release/private.pem \
-            --cert ./sign/release/certificate.pem || \
-          # 备用命令格式：不同版本 hap-toolkit 参数略有差异
-          hap build --release --sign ./sign/release || \
-          # 最简形式（让 hap-toolkit 自动从项目根 sign/ 读取）
-          hap build --release
+          echo "=== aiot release ==="
+          npm run release 2>&1 | tee build.log || true
+          if ! find . -name "*.rpk" -type f | grep -q .; then
+            echo "=== retry: npx aiot release ==="
+            npx aiot release --enable-custom-component --enable-jsc 2>&1 | tee -a build.log || true
+          fi
+          if ! find . -name "*.rpk" -type f | grep -q .; then
+            echo "=== retry: npx aiot build ==="
+            npx aiot build --enable-custom-component 2>&1 | tee -a build.log || true
+          fi
+          echo "=== build.log tail ==="
+          tail -80 build.log
+          echo "=== .rpk files ==="
+          find . -name "*.rpk" -type f
+          if ! find . -name "*.rpk" -type f | grep -q .; then
+            echo "ERROR: no .rpk produced"
+            exit 1
+          fi
 
       # 列出产物
       - name: List build outputs
