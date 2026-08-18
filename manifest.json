@@ -3,6 +3,7 @@
   "name": "TG Wear",
   "versionName": "0.1.0",
   "versionCode": 1,
+  "icon": "/common/images/hd.png",
   "minPlatformVersion": 1100,
   "simulationVersion": "default",
   "deviceTypeList": ["watch"],

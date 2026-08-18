@@ -1,0 +1,11 @@
+{
+  "name": "tgwear-quickapp",
+  "version": "0.1.0",
+  "description": "TG Wear quick-app for Xiaomi Vela wearables",
+  "scripts": {
+    "build": "hap build",
+    "release": "hap release",
+    "watch": "hap watch"
+  },
+  "license": "GPL-2.0"
+}
