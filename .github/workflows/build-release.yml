@@ -28,17 +28,16 @@ jobs:
           node-version: '18'
 
       # 小米 Vela 快应用官方工具链
-      # @aiot-toolkit/hap 是小米提供的 hap 打包工具
+      # hap-toolkit 是快应用联盟标准工具（小米/华为/OPPO/vivo 共用），最新 2.0.9
       - name: Install hap-toolkit
         run: |
-          npm install -g @aiot-toolkit/hap
-          hap --version || true
+          npm install -g hap-toolkit
+          hap --version
 
       # 验证签名文件存在
       - name: Verify signing materials
         run: |
           ls -la sign/debug/ sign/release/
-          # 简单校验 pem 格式
           for f in sign/debug/private.pem sign/debug/certificate.pem \
                    sign/release/private.pem sign/release/certificate.pem; do
             if [ ! -f "$f" ]; then
@@ -49,18 +48,22 @@ jobs:
           done
 
       # 编译并签名 RPK
-      # hap build 默认输出到 dist/，使用 --sign 指定签名目录
-      # --debug 用 debug 签名，--release 用 release 签名
+      # hap-toolkit 命令：hap watch / hap build / hap release
+      # 项目根目录有 manifest.json，hap-toolkit 会自动识别
       - name: Build release RPK
         run: |
-          hap build --release \
-            --sign ./sign/release \
-            --private-key ./sign/release/private.pem \
-            --cert ./sign/release/certificate.pem || \
-          # 备用命令格式：不同版本 hap-toolkit 参数略有差异
-          hap build --release --sign ./sign/release || \
-          # 最简形式（让 hap-toolkit 自动从项目根 sign/ 读取）
-          hap build --release
+          # hap-toolkit 通过项目根 sign/release/*.pem 自动签名
+          # --release 输出 release 签名的 rpk 到 dist/
+          hap build --release 2>&1 | tee build.log || true
+          # 如果上面失败，尝试 npx 方式（避免 -g 安装路径问题）
+          if ! find . -name "*.rpk" -type f | grep -q .; then
+            echo "retry with npx..."
+            npx hap build --release 2>&1 | tee -a build.log
+          fi
+          echo "=== build.log tail ==="
+          tail -50 build.log
+          echo "=== .rpk files ==="
+          find . -name "*.rpk" -type f
 
       # 列出产物
       - name: List build outputs
