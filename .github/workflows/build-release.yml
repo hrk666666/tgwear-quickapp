@@ -48,22 +48,33 @@ jobs:
           done
 
       # 编译并签名 RPK
-      # hap-toolkit 命令：hap watch / hap build / hap release
-      # 项目根目录有 manifest.json，hap-toolkit 会自动识别
+      # hap-toolkit 2.x 命令：hap build / hap release
+      # 不识别 --release 标志，release 签名通过 sign/release/*.pem 自动识别
       - name: Build release RPK
         run: |
-          # hap-toolkit 通过项目根 sign/release/*.pem 自动签名
-          # --release 输出 release 签名的 rpk 到 dist/
-          hap build --release 2>&1 | tee build.log || true
-          # 如果上面失败，尝试 npx 方式（避免 -g 安装路径问题）
+          echo "=== hap version ==="
+          hap --version
+          echo "=== hap help ==="
+          hap --help 2>&1 | head -30
+          echo "=== try hap release ==="
+          hap release 2>&1 | tee build.log || true
           if ! find . -name "*.rpk" -type f | grep -q .; then
-            echo "retry with npx..."
-            npx hap build --release 2>&1 | tee -a build.log
+            echo "=== retry with hap build ==="
+            hap build 2>&1 | tee -a build.log || true
+          fi
+          if ! find . -name "*.rpk" -type f | grep -q .; then
+            echo "=== retry with npx hap build ==="
+            npx hap build 2>&1 | tee -a build.log
           fi
           echo "=== build.log tail ==="
-          tail -50 build.log
+          tail -60 build.log
           echo "=== .rpk files ==="
           find . -name "*.rpk" -type f
+          # 检查最终是否有 rpk
+          if ! find . -name "*.rpk" -type f | grep -q .; then
+            echo "ERROR: no .rpk produced"
+            exit 1
+          fi
 
       # 列出产物
       - name: List build outputs
