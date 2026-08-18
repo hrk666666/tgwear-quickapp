@@ -48,19 +48,31 @@ jobs:
           done
 
       # 编译并签名 RPK
-      # hap-toolkit 2.x 命令：hap build / hap release
-      # 不识别 --release 标志，release 签名通过 sign/release/*.pem 自动识别
+      # hap-toolkit 期望 src/manifest.json（快应用联盟标准结构）
+      # 我们的 manifest.json 在仓库根（Vela IDE 兼容），CI 时复制到 src/
+      # app.ux 也在根，引用 ./src/utils/...；复制到 src/ 后改引用为 ./utils/...
+      - name: Prepare hap-toolkit project structure
+        run: |
+          echo "=== prepare src/ layout for hap-toolkit ==="
+          cp manifest.json src/manifest.json
+          # app.ux 复制到 src/，并把 ./src/utils/ 引用改为 ./utils/
+          sed 's|\./src/utils/|./utils/|g' app.ux > src/app.ux
+          echo "=== src/ contents ==="
+          ls -la src/
+          echo "=== src/app.ux head ==="
+          head -5 src/app.ux
+
       - name: Build release RPK
         run: |
           echo "=== hap version ==="
           hap --version
           echo "=== hap help ==="
           hap --help 2>&1 | head -30
-          echo "=== try hap release ==="
-          hap release 2>&1 | tee build.log || true
+          echo "=== try hap build ==="
+          hap build 2>&1 | tee build.log || true
           if ! find . -name "*.rpk" -type f | grep -q .; then
-            echo "=== retry with hap build ==="
-            hap build 2>&1 | tee -a build.log || true
+            echo "=== retry with hap release ==="
+            hap release 2>&1 | tee -a build.log || true
           fi
           if ! find . -name "*.rpk" -type f | grep -q .; then
             echo "=== retry with npx hap build ==="
