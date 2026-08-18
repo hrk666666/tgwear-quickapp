@@ -2,81 +2,86 @@
   <div class="page">
     <list class="list">
       <!-- 字体大小 -->
-      <list-item class="item" @click="openFontSize">
+      <list-item class="item" @click="openFontSize" type="fontsize">
         <div class="item-content">
           <text class="itemtext">字体大小</text>
           <text class="itemtext2">{{fontSizeLabel}}</text>
         </div>
-        <image src="/common/images/enter.png" static style="width:32dp;height:32dp;" />
+        <image src="/common/images/enter.png" static style="width:32px;height:32px;" />
       </list-item>
 
       <!-- 振动反馈 -->
-      <list-item class="item" @click="toggleVibration">
+      <list-item class="item" @click="toggleVibration" type="vibration">
         <div class="item-content">
           <text class="itemtext">振动反馈</text>
           <text class="itemtext2">新消息按键振动</text>
         </div>
         <image src="{{vibration ? '/common/images/Switch_ON.png' : '/common/images/Switch_OFF.png'}}" static
-               style="width:32dp;height:24dp;" />
+               style="width:32px;height:24px;" />
       </list-item>
 
       <!-- 屏幕常亮 -->
-      <list-item class="item" @click="toggleKeepScreenOn">
+      <list-item class="item" @click="toggleKeepScreenOn" type="keepscreen">
         <div class="item-content">
           <text class="itemtext">屏幕常亮</text>
           <text class="itemtext2">聊天时保持亮屏</text>
         </div>
         <image src="{{keepScreenOn ? '/common/images/Switch_ON.png' : '/common/images/Switch_OFF.png'}}" static
-               style="width:32dp;height:24dp;" />
+               style="width:32px;height:24px;" />
       </list-item>
 
       <!-- 关于 -->
-      <list-item class="item" @click="openAbout">
+      <list-item class="item" @click="openAbout" type="about">
         <div class="item-content">
           <text class="itemtext">关于</text>
           <text class="itemtext2">版本 0.1.0</text>
         </div>
-        <image src="/common/images/enter.png" static style="width:32dp;height:32dp;" />
+        <image src="/common/images/enter.png" static style="width:32px;height:32px;" />
       </list-item>
 
       <!-- 退出登录 -->
-      <list-item class="item" @click="confirmLogout">
+      <list-item class="item" @click="confirmLogout" type="logout">
         <div class="item-content">
           <text class="itemtext">退出登录</text>
           <text class="itemtext2">登出手机端 Telegram</text>
         </div>
-        <image src="/common/images/delete.png" static style="width:32dp;height:32dp;" />
+        <image src="/common/images/delete.png" static style="width:32px;height:32px;" />
       </list-item>
     </list>
 
-    <!-- 顶部 header -->
+    <!-- 顶部 header（对齐 ebook o66） -->
     <image src="/common/images/hd.png" static
-           style="position:absolute;left:0dp;top:0dp;width:212px;height:82dp;" />
-    <text style="position:absolute;top:16dp;left:0dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.6);">{{nowTime}}</text>
-    <text static style="position:absolute;top:36dp;left:0dp;width:212px;text-align:center;font-size:26dp;font-weight:bold;color:#ffffff;">设置</text>
+           style="position:absolute;left:0px;top:0px;width:212px;height:82px;" />
+    <text style="position:absolute;top:16px;left:0px;width:212px;line-height:24px;text-align:center;font-size:16px;color:rgba(255,255,255,0.6);">
+      {{nowTime}}
+    </text>
+    <text static style="position:absolute;top:36px;left:0px;width:212px;line-height:42px;text-align:center;font-size:26px;font-weight:bold;color:#ffffff;">
+      设置
+    </text>
   </div>
 </template>
 
 <style>
 .page {
   width: 212px;
-  height: 480dp;
+  height: 520px;
   background-color: #000000;
 }
 .list {
   width: 212px;
+  height: 520px;
   position: absolute;
-  top: 0dp;
-  left: 0dp;
-  padding: 86dp 12dp;
+  top: 0px;
+  left: 0px;
+  padding: 86px 12px;
 }
 .item {
   width: 100%;
-  height: 85dp;
-  padding: 12dp 18dp;
-  margin-bottom: 8dp;
+  height: 85px;
+  padding: 12px 18px;
+  margin-bottom: 8px;
   background-color: #262626;
-  border-radius: 26dp;
+  border-radius: 26px;
   align-items: center;
   justify-content: space-between;
 }
@@ -87,7 +92,7 @@
   justify-content: space-between;
 }
 .itemtext {
-  font-size: 23dp;
+  font-size: 23px;
   width: 100%;
   font-weight: bold;
   color: #ffffff;
@@ -95,7 +100,7 @@
   lines: 1;
 }
 .itemtext2 {
-  font-size: 18dp;
+  font-size: 20px;
   font-weight: bold;
   color: rgba(255,255,255,0.6);
   text-overflow: ellipsis;
@@ -113,17 +118,37 @@ export default {
     nowTime: '',
     vibration: true,
     keepScreenOn: false,
-    fontSizeLabel: '中'
+    fontSizeLabel: '中',
+    _timer: null
   },
 
   onInit() {
-    this.nowTime = nowTimeString()
     this.refreshFromStore()
   },
 
   onShow() {
-    this.nowTime = nowTimeString()
+    this.updateTime()
+    if (this._timer) clearInterval(this._timer)
+    this._timer = setInterval(() => this.updateTime(), 1000)
     this.refreshFromStore()
+  },
+
+  onHide() {
+    if (this._timer) {
+      clearInterval(this._timer)
+      this._timer = null
+    }
+  },
+
+  onDestroy() {
+    if (this._timer) {
+      clearInterval(this._timer)
+      this._timer = null
+    }
+  },
+
+  updateTime() {
+    this.nowTime = nowTimeString()
   },
 
   refreshFromStore() {

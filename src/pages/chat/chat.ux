@@ -2,35 +2,35 @@
 
 <template>
   <div class="page">
-    <!-- 顶部 header -->
+    <!-- 顶部 header（对齐 ebook o66） -->
     <image src="/common/images/hd.png" static
-           style="position:absolute;left:0dp;top:0dp;width:212px;height:82dp;" />
+           style="position:absolute;left:0px;top:0px;width:212px;height:82px;" />
     <image src="/common/images/back.png" static @click="goBack"
-           style="position:absolute;left:8dp;top:24dp;width:34dp;height:34dp;" />
-    <text static style="position:absolute;top:36dp;left:46dp;width:158dp;font-size:22dp;font-weight:bold;color:#ffffff;text-overflow:ellipsis;lines:1;">{{title}}</text>
+           style="position:absolute;left:8px;top:24px;width:34px;height:34px;" />
+    <text static style="position:absolute;top:36px;left:46px;width:158px;font-size:22px;font-weight:bold;color:#ffffff;text-overflow:ellipsis;lines:1;">{{title}}</text>
 
     <!-- 消息列表 -->
-    <list class="msg-list" id="msgList" style="top:82dp;height:{{hideKeyboard ? 298 : 143}}dp;">
+    <list class="msg-list" id="msgList" style="top:82px;height:{{hideKeyboard ? 316 : 160}}px;">
       <!-- 加载更多 -->
-      <list-item if="{{hasMore && messages.length > 0}}" @click="loadMore" class="load-more-item">
-        <text style="font-size:14dp;color:rgba(255,255,255,0.6);">加载更多</text>
+      <list-item if="{{hasMore && messages.length > 0}}" @click="loadMore" class="load-more-item" type="more">
+        <text style="font-size:14px;color:rgba(255,255,255,0.6);">加载更多</text>
       </list-item>
 
       <!-- 消息条目 -->
-      <list-item class="msg-row" for="{{messages}}">
+      <list-item class="msg-row" for="{{messages}}" type="msg">
         <div class="msg-bubble {{$item.out ? 'msg-out' : 'msg-in'}}">
           <text class="msg-text">{{$item.text}}</text>
         </div>
       </list-item>
 
       <!-- 空状态 -->
-      <list-item if="{{messages.length === 0 && !loading}}" class="empty-item">
-        <text style="font-size:14dp;color:rgba(255,255,255,0.4);">暂无消息</text>
+      <list-item if="{{messages.length === 0 && !loading}}" class="empty-item" type="empty">
+        <text style="font-size:14px;color:rgba(255,255,255,0.4);">暂无消息</text>
       </list-item>
 
       <!-- 加载中 -->
-      <list-item if="{{loading && messages.length === 0}}" class="empty-item">
-        <text style="font-size:14dp;color:rgba(255,255,255,0.6);">加载中...</text>
+      <list-item if="{{loading && messages.length === 0}}" class="empty-item" type="loading">
+        <text style="font-size:14px;color:rgba(255,255,255,0.6);">加载中...</text>
       </list-item>
     </list>
 
@@ -60,26 +60,26 @@
 <style>
 .page {
   width: 212px;
-  height: 480dp;
+  height: 520px;
   background-color: #000000;
 }
 .msg-list {
   position: absolute;
-  left: 0dp;
+  left: 0px;
   width: 212px;
-  padding: 6dp 8dp;
+  padding: 6px 8px;
 }
 .msg-row {
   width: 100%;
   flex-direction: column;
   align-items: flex-start;
-  margin-bottom: 6dp;
+  margin-bottom: 6px;
   background-color: transparent;
 }
 .msg-bubble {
-  max-width: 168dp;
-  padding: 8dp 12dp;
-  border-radius: 14dp;
+  max-width: 168px;
+  padding: 8px 12px;
+  border-radius: 14px;
   background-color: #262626;
 }
 .msg-out {
@@ -91,7 +91,7 @@
   background-color: #262626;
 }
 .msg-text {
-  font-size: 16dp;
+  font-size: 16px;
   color: #ffffff;
   lines: 6;
 }
@@ -99,74 +99,74 @@
   width: 100%;
   align-items: center;
   flex-direction: column;
-  padding: 40dp 0;
+  padding: 40px 0;
   background-color: transparent;
 }
 .load-more-item {
   width: 100%;
-  height: 40dp;
+  height: 40px;
   align-items: center;
   justify-content: center;
   background-color: transparent;
 }
 .input-bar {
   position: absolute;
-  left: 0dp;
-  top: 380dp;
+  left: 0px;
+  top: 398px;
   width: 212px;
-  height: 100dp;
+  height: 100px;
   flex-direction: row;
   align-items: center;
-  padding: 0 8dp;
+  padding: 0 8px;
   background-color: #000000;
   border-top-color: rgba(255,255,255,0.08);
-  border-top-width: 1dp;
+  border-top-width: 1px;
 }
 .input-preview {
   flex: 1;
-  height: 44dp;
+  height: 44px;
   background-color: #262626;
-  border-radius: 22dp;
-  padding: 0 14dp;
+  border-radius: 22px;
+  padding: 0 14px;
   align-items: flex-start;
   justify-content: center;
-  margin-right: 8dp;
+  margin-right: 8px;
 }
 .input-text {
-  font-size: 16dp;
+  font-size: 16px;
   color: #ffffff;
   lines: 1;
   text-overflow: ellipsis;
 }
 .input-placeholder {
-  font-size: 16dp;
+  font-size: 16px;
   color: rgba(255,255,255,0.4);
 }
 .send-btn {
-  width: 60dp;
-  height: 44dp;
+  width: 60px;
+  height: 44px;
   background-color: #2ea0ff;
-  border-radius: 22dp;
+  border-radius: 22px;
   align-items: center;
   justify-content: center;
 }
 .send-text {
-  font-size: 16dp;
+  font-size: 16px;
   font-weight: bold;
   color: #ffffff;
 }
 
-/* 圆屏适配：466dp 等圆形手表 */
+/* 圆屏适配：466 等圆形手表 */
 @media (shape: circle) {
   .msg-bubble {
-    max-width: 320dp;
+    max-width: 320px;
   }
 }
 
 /* 胶囊屏适配 */
 @media (shape: pill-shaped) {
   .msg-bubble {
-    max-width: 240dp;
+    max-width: 240px;
   }
 }
 </style>

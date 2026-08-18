@@ -2,7 +2,7 @@
   <div class="page">
     <list class="list" id="chatList">
       <!-- 会话列表 -->
-      <list-item class="item cover-item" for="{{dialogs}}" @click="openChat($item)">
+      <list-item class="item" for="{{dialogs}}" @click="openChat($item)" type="dialog">
         <!-- 头像占位 -->
         <div class="cover-image">
           <text class="cover-text">{{$item.initial}}</text>
@@ -22,76 +22,75 @@
       </list-item>
 
       <!-- 空状态 -->
-      <list-item if="{{dialogs.length === 0 && !loading}}" class="empty-item">
+      <list-item if="{{dialogs.length === 0 && !loading}}" class="empty-item" type="empty">
         <image src="/common/images/empty.png" static
-               style="width:92dp;height:92dp;margin-left:60dp;margin-top:80dp;" />
-        <text style="margin-top:12dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.4);">暂无会话</text>
+               style="width:92px;height:92px;margin-left:60px;margin-top:80px;" />
+        <text style="margin-top:12px;width:212px;text-align:center;font-size:18px;color:rgba(255,255,255,0.4);">暂无会话</text>
       </list-item>
 
       <!-- 加载中 -->
-      <list-item if="{{loading}}" class="empty-item">
-        <text style="margin-top:200dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.6);">加载中...</text>
+      <list-item if="{{loading}}" class="empty-item" type="loading">
+        <text style="margin-top:200px;width:212px;text-align:center;font-size:18px;color:rgba(255,255,255,0.6);">加载中...</text>
       </list-item>
 
       <!-- 加载更多 -->
-      <list-item if="{{hasMore && dialogs.length > 0}}" @click="loadMore" class="load-more-item">
-        <text style="font-size:18dp;color:rgba(255,255,255,0.6);">加载更多</text>
+      <list-item if="{{hasMore && dialogs.length > 0}}" @click="loadMore" class="load-more-item" type="more">
+        <text style="font-size:18px;color:rgba(255,255,255,0.6);">加载更多</text>
       </list-item>
     </list>
 
-    <!-- 顶部 header -->
+    <!-- 顶部 header（对齐 ebook o66: hd.png 212x82, 时间 top16/18px, 标题 top36/26px） -->
     <image src="/common/images/hd.png" static
-           style="position:absolute;left:0dp;top:0dp;width:212px;height:82dp;" />
-    <text style="position:absolute;top:16dp;left:0dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.6);">{{nowTime}}</text>
-    <text static style="position:absolute;top:36dp;left:0dp;width:212px;text-align:center;font-size:26dp;font-weight:bold;color:#ffffff;">会话</text>
+           style="position:absolute;left:0px;top:0px;width:212px;height:82px;" />
+    <text style="position:absolute;top:16px;left:0px;width:212px;line-height:24px;text-align:center;font-size:16px;color:rgba(255,255,255,0.6);">
+      {{nowTime}}
+    </text>
+    <text static style="position:absolute;top:36px;left:0px;width:212px;line-height:42px;text-align:center;font-size:26px;font-weight:bold;color:#ffffff;">
+      会话
+    </text>
 
     <!-- 底部菜单按钮 -->
     <image src="/common/images/more.png" static @click="openSetting"
-           style="position:absolute;left:70dp;top:398dp;width:72dp;height:72dp;" />
+           style="position:absolute;left:70px;top:398px;width:72px;height:72px;" />
   </div>
 </template>
 
 <style>
 .page {
   width: 212px;
-  height: 480dp;
+  height: 520px;
   background-color: #000000;
 }
 .list {
   width: 212px;
-  height: 480dp;
+  height: 520px;
   position: absolute;
-  top: 0dp;
-  left: 0dp;
-  padding: 86dp 12dp;
+  top: 0px;
+  left: 0px;
+  padding: 86px 12px;
 }
 .item {
   width: 100%;
-  height: 85dp;
-  padding: 12dp 18dp;
-  margin-bottom: 8dp;
+  height: 85px;
+  padding: 12px 18px;
+  margin-bottom: 8px;
   background-color: #262626;
-  border-radius: 26dp;
+  border-radius: 26px;
   align-items: center;
   justify-content: space-between;
 }
-.cover-item {
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-}
 .cover-image {
-  width: 52dp;
-  height: 52dp;
+  width: 52px;
+  height: 52px;
   background-color: #2ea0ff;
-  border-radius: 26dp;
-  margin-right: 12dp;
+  border-radius: 26px;
+  margin-right: 12px;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 .cover-text {
-  font-size: 24dp;
+  font-size: 24px;
   font-weight: bold;
   color: #ffffff;
 }
@@ -104,7 +103,7 @@
   overflow: hidden;
 }
 .itemtext {
-  font-size: 18dp;
+  font-size: 23px;
   width: 100%;
   font-weight: bold;
   color: #ffffff;
@@ -112,7 +111,7 @@
   lines: 1;
 }
 .itemtext2 {
-  font-size: 14dp;
+  font-size: 20px;
   font-weight: bold;
   color: rgba(255,255,255,0.6);
   text-overflow: ellipsis;
@@ -126,20 +125,20 @@
   flex-shrink: 0;
 }
 .time-text {
-  font-size: 14dp;
+  font-size: 14px;
   color: rgba(255,255,255,0.4);
-  margin-bottom: 4dp;
+  margin-bottom: 4px;
 }
 .unread-badge {
   background-color: #2ea0ff;
-  border-radius: 14dp;
-  padding: 2dp 8dp;
-  min-width: 20dp;
+  border-radius: 14px;
+  padding: 2px 8px;
+  min-width: 20px;
   align-items: center;
   justify-content: center;
 }
 .unread-text {
-  font-size: 14dp;
+  font-size: 14px;
   font-weight: bold;
   color: #ffffff;
 }
@@ -147,12 +146,12 @@
   width: 100%;
   align-items: center;
   flex-direction: column;
-  padding: 0dp;
+  padding: 0px;
   background-color: transparent;
 }
 .load-more-item {
   width: 100%;
-  height: 60dp;
+  height: 60px;
   align-items: center;
   justify-content: center;
   background-color: transparent;
@@ -172,11 +171,11 @@ export default {
     dialogs: [],
     loading: false,
     hasMore: false,
-    _offsetId: 0
+    _offsetId: 0,
+    _timer: null
   },
 
   onInit() {
-    this.nowTime = nowTimeString()
     this._offsetId = 0
     // 初始用 store 中的数据填充（页面间返回时立即显示）
     const stored = store.get('dialogs') || []
@@ -185,18 +184,36 @@ export default {
   },
 
   onShow() {
-    this.nowTime = nowTimeString()
+    this.updateTime()
+    // 每秒刷新时间（对齐 ebook 时钟）
+    if (this._timer) clearInterval(this._timer)
+    this._timer = setInterval(() => this.updateTime(), 1000)
     // 若列表为空则拉取
     if (this.dialogs.length === 0) {
       this.loadDialogs(true)
     }
   },
 
+  onHide() {
+    if (this._timer) {
+      clearInterval(this._timer)
+      this._timer = null
+    }
+  },
+
   onDestroy() {
+    if (this._timer) {
+      clearInterval(this._timer)
+      this._timer = null
+    }
     if (messageHandler) {
       messageHandler()
       messageHandler = null
     }
+  },
+
+  updateTime() {
+    this.nowTime = nowTimeString()
   },
 
   _setupMessageHandler() {
