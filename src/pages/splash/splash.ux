@@ -1,0 +1,130 @@
+<template>
+  <div class="page">
+    <!-- 状态图标 -->
+    <image src="{{iconPath}}" style="position:absolute;left:60dp;top:180dp;width:92dp;height:92dp;" />
+
+    <!-- 标题 -->
+    <text style="position:absolute;left:0dp;top:290dp;width:212px;text-align:center;font-size:20dp;font-weight:bold;color:#ffffff;">
+      {{title}}
+    </text>
+
+    <!-- 副标题（多行） -->
+    <text style="position:absolute;left:12dp;top:322dp;width:188dp;text-align:center;font-size:14dp;color:rgba(255,255,255,0.4);lines:2;">
+      {{subtitle}}
+    </text>
+
+    <!-- 重试按钮（仅在未连接或未登录时显示） -->
+    <input type="button" value="{{buttonText}}" if="{{showButton}}"
+           style="position:absolute;left:46dp;top:400dp;width:120dp;height:48dp;font-size:18dp;color:#000000;background-color:#2ea0ff;border-radius:26dp;"
+           @click="onButtonClick" />
+
+    <!-- 顶部 header -->
+    <image src="/common/images/hd.png" static
+           style="position:absolute;left:0dp;top:0dp;width:212px;height:82dp;" />
+    <text style="position:absolute;top:16dp;left:0dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.6);">{{nowTime}}</text>
+    <text static style="position:absolute;top:36dp;left:0dp;width:212px;text-align:center;font-size:26dp;font-weight:bold;color:#ffffff;">TG Wear</text>
+  </div>
+</template>
+
+<style>
+.page {
+  width: 212px;
+  height: 480dp;
+  background-color: #000000;
+}
+</style>
+
+<script>
+import interconn from '../../utils/interconn'
+import api from '../../utils/api'
+import store from '../../utils/store'
+import { nowTimeString } from '../../utils/format'
+
+export default {
+  data: {
+    nowTime: '',
+    iconPath: '/common/images/empty.png',
+    title: '正在连接...',
+    subtitle: '',
+    buttonText: '',
+    showButton: false
+  },
+
+  onInit() {
+    this.nowTime = nowTimeString()
+  },
+
+  onShow() {
+    this.nowTime = nowTimeString()
+    this.checkConnection()
+  },
+
+  async checkConnection() {
+    this.title = '正在连接...'
+    this.subtitle = ''
+    this.showButton = false
+    this.iconPath = '/common/images/empty.png'
+
+    try {
+      const result = await interconn.diagnosis(8000)
+      // status: 0=OK, 204=timeout, 1001=app not installed, 1000=others
+      if (result.status === 0) {
+        await this.checkAuth()
+      } else if (result.status === 1001) {
+        this.iconPath = '/common/images/connect.png'
+        this.title = '需要配套 App'
+        this.subtitle = '请在手机上安装并打开 TG Wear 配套 App'
+        this.buttonText = '重试'
+        this.showButton = true
+      } else if (result.status === 204) {
+        this.iconPath = '/common/images/connect.png'
+        this.title = '连接超时'
+        this.subtitle = '请确认手机端 App 已启动并解锁屏幕'
+        this.buttonText = '重试'
+        this.showButton = true
+      } else {
+        this.iconPath = '/common/images/error.png'
+        this.title = '连接失败'
+        this.subtitle = '错误码：' + result.status
+        this.buttonText = '重试'
+        this.showButton = true
+      }
+    } catch (e) {
+      this.iconPath = '/common/images/error.png'
+      this.title = '未连接'
+      this.subtitle = (e && e.msg) || '请打开手机端 TG Wear App'
+      this.buttonText = '重试'
+      this.showButton = true
+    }
+  },
+
+  async checkAuth() {
+    this.title = '正在检查登录...'
+    try {
+      const auth = await api.getAuthState()
+      if (auth && auth.authorized) {
+        store.set('session', auth.user)
+        // 跳转到会话列表
+        const router = require('@system.router')
+        router.replace({ uri: 'pages/chats' })
+      } else {
+        this.iconPath = '/common/images/info.png'
+        this.title = '未登录'
+        this.subtitle = '请在手机端 TG Wear 中登录 Telegram'
+        this.buttonText = '刷新'
+        this.showButton = true
+      }
+    } catch (e) {
+      this.iconPath = '/common/images/error.png'
+      this.title = '检查登录失败'
+      this.subtitle = (e && e.msg) || '请稍后重试'
+      this.buttonText = '重试'
+      this.showButton = true
+    }
+  },
+
+  onButtonClick() {
+    this.checkConnection()
+  }
+}
+</script>

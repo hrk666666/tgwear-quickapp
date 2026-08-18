@@ -1,0 +1,51 @@
+<script>
+import interconn from './src/utils/interconn'
+import api from './src/utils/api'
+import store from './src/utils/store'
+
+export default {
+  async onCreate() {
+    globalThis.conn = interconn
+    globalThis.api = api
+    globalThis.store = store
+
+    try {
+      interconn.init()
+      interconn.onState((state, info) => {
+        console.log('[interconn] state:', state, info)
+        store.set('connectionState', state)
+      })
+
+      // 加载设置
+      await store.loadSettings()
+
+      // 订阅事件（手机端推送）
+      api.on('update.newMessage', (data) => {
+        if (!data) return
+        try {
+          store.appendDialog(data.peer, [data.message])
+          if (data.dialog) store.upsertDialog(data.dialog)
+        } catch (e) {
+          console.error('[update.newMessage] handler error:', e)
+        }
+      })
+      api.on('update.connectionState', (data) => {
+        if (data && data.session) store.set('session', data.session)
+      })
+    } catch (e) {
+      console.error('[app.onCreate] error:', e)
+    }
+  },
+  onDestroy() {
+    console.log('[app] destroyed')
+  },
+  // 全局未捕获错误兜底
+  onError(err) {
+    console.error('[app.onError] uncaught:', err)
+  },
+  // 全局未处理的 Promise rejection
+  onUnhandledRejection(data) {
+    console.error('[app.onUnhandledRejection]:', data && (data.reason || data))
+  }
+}
+</script>

@@ -1,0 +1,20 @@
+# 编译产物
+dist/
+.rpk
+*.rpk
+
+# IDE / 系统
+.idea/
+.vscode/
+*.iml
+*.swp
+.DS_Store
+Thumbs.db
+
+# 本地调试缓存
+.cache/
+node_modules/
+
+# === 签名材料：本仓库需要提交（与手机端 Android App 签名一致） ===
+# 故意不忽略 sign/ 下的任何文件，便于开源后他人复现
+!sign/

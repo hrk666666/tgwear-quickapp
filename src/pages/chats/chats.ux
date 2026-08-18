@@ -1,0 +1,282 @@
+<template>
+  <div class="page">
+    <list class="list" id="chatList">
+      <!-- 会话列表 -->
+      <list-item class="item cover-item" for="{{dialogs}}" @click="openChat($item)">
+        <!-- 头像占位 -->
+        <div class="cover-image">
+          <text class="cover-text">{{$item.initial}}</text>
+        </div>
+        <!-- 中间信息 -->
+        <div class="cover-content">
+          <text class="itemtext">{{$item.title}}</text>
+          <text class="itemtext2">{{$item.preview}}</text>
+        </div>
+        <!-- 右侧时间和未读 -->
+        <div class="cover-right">
+          <text class="time-text">{{$item.timeText}}</text>
+          <div class="unread-badge" if="{{$item.unread_count > 0}}">
+            <text class="unread-text">{{$item.unread_count > 99 ? '99+' : $item.unread_count}}</text>
+          </div>
+        </div>
+      </list-item>
+
+      <!-- 空状态 -->
+      <list-item if="{{dialogs.length === 0 && !loading}}" class="empty-item">
+        <image src="/common/images/empty.png" static
+               style="width:92dp;height:92dp;margin-left:60dp;margin-top:80dp;" />
+        <text style="margin-top:12dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.4);">暂无会话</text>
+      </list-item>
+
+      <!-- 加载中 -->
+      <list-item if="{{loading}}" class="empty-item">
+        <text style="margin-top:200dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.6);">加载中...</text>
+      </list-item>
+
+      <!-- 加载更多 -->
+      <list-item if="{{hasMore && dialogs.length > 0}}" @click="loadMore" class="load-more-item">
+        <text style="font-size:18dp;color:rgba(255,255,255,0.6);">加载更多</text>
+      </list-item>
+    </list>
+
+    <!-- 顶部 header -->
+    <image src="/common/images/hd.png" static
+           style="position:absolute;left:0dp;top:0dp;width:212px;height:82dp;" />
+    <text style="position:absolute;top:16dp;left:0dp;width:212px;text-align:center;font-size:18dp;color:rgba(255,255,255,0.6);">{{nowTime}}</text>
+    <text static style="position:absolute;top:36dp;left:0dp;width:212px;text-align:center;font-size:26dp;font-weight:bold;color:#ffffff;">会话</text>
+
+    <!-- 底部菜单按钮 -->
+    <image src="/common/images/more.png" static @click="openSetting"
+           style="position:absolute;left:70dp;top:398dp;width:72dp;height:72dp;" />
+  </div>
+</template>
+
+<style>
+.page {
+  width: 212px;
+  height: 480dp;
+  background-color: #000000;
+}
+.list {
+  width: 212px;
+  height: 480dp;
+  position: absolute;
+  top: 0dp;
+  left: 0dp;
+  padding: 86dp 12dp;
+}
+.item {
+  width: 100%;
+  height: 85dp;
+  padding: 12dp 18dp;
+  margin-bottom: 8dp;
+  background-color: #262626;
+  border-radius: 26dp;
+  align-items: center;
+  justify-content: space-between;
+}
+.cover-item {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+.cover-image {
+  width: 52dp;
+  height: 52dp;
+  background-color: #2ea0ff;
+  border-radius: 26dp;
+  margin-right: 12dp;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cover-text {
+  font-size: 24dp;
+  font-weight: bold;
+  color: #ffffff;
+}
+.cover-content {
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: flex-start;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+.itemtext {
+  font-size: 18dp;
+  width: 100%;
+  font-weight: bold;
+  color: #ffffff;
+  text-overflow: ellipsis;
+  lines: 1;
+}
+.itemtext2 {
+  font-size: 14dp;
+  font-weight: bold;
+  color: rgba(255,255,255,0.6);
+  text-overflow: ellipsis;
+  lines: 1;
+}
+.cover-right {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  flex-shrink: 0;
+}
+.time-text {
+  font-size: 14dp;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 4dp;
+}
+.unread-badge {
+  background-color: #2ea0ff;
+  border-radius: 14dp;
+  padding: 2dp 8dp;
+  min-width: 20dp;
+  align-items: center;
+  justify-content: center;
+}
+.unread-text {
+  font-size: 14dp;
+  font-weight: bold;
+  color: #ffffff;
+}
+.empty-item {
+  width: 100%;
+  align-items: center;
+  flex-direction: column;
+  padding: 0dp;
+  background-color: transparent;
+}
+.load-more-item {
+  width: 100%;
+  height: 60dp;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+}
+</style>
+
+<script>
+import api from '../../utils/api'
+import store from '../../utils/store'
+import { formatTime, messagePreview, nowTimeString, initial } from '../../utils/format'
+
+let messageHandler = null
+
+export default {
+  data: {
+    nowTime: '',
+    dialogs: [],
+    loading: false,
+    hasMore: false,
+    _offsetId: 0
+  },
+
+  onInit() {
+    this.nowTime = nowTimeString()
+    this._offsetId = 0
+    // 初始用 store 中的数据填充（页面间返回时立即显示）
+    const stored = store.get('dialogs') || []
+    this.dialogs = stored.map(this._mapDialog)
+    this._setupMessageHandler()
+  },
+
+  onShow() {
+    this.nowTime = nowTimeString()
+    // 若列表为空则拉取
+    if (this.dialogs.length === 0) {
+      this.loadDialogs(true)
+    }
+  },
+
+  onDestroy() {
+    if (messageHandler) {
+      messageHandler()
+      messageHandler = null
+    }
+  },
+
+  _setupMessageHandler() {
+    if (messageHandler) messageHandler()
+    messageHandler = api.on('update.newMessage', (data) => {
+      if (!data || !data.dialog) return
+      // 更新列表中已有会话或插入新的
+      const all = store.get('dialogs') || []
+      const idx = all.findIndex(d => d.peer === data.dialog.peer)
+      const mapped = this._mapDialog(data.dialog)
+      if (idx >= 0) {
+        all[idx] = data.dialog
+        // 移到顶部
+        const item = all.splice(idx, 1)[0]
+        all.unshift(item)
+      } else {
+        all.unshift(data.dialog)
+      }
+      // 重新映射前 30 条
+      this.dialogs = all.slice(0, 30).map(this._mapDialog)
+    })
+  },
+
+  _mapDialog(d) {
+    return {
+      peer: d.peer,
+      title: d.title || '未知',
+      preview: messagePreview(d.last_message),
+      timeText: formatTime(d.last_message_date),
+      unread_count: d.unread_count || 0,
+      initial: initial(d.title)
+    }
+  },
+
+  async loadDialogs(reset) {
+    if (this.loading) return
+    this.loading = true
+    try {
+      if (reset) {
+        this._offsetId = 0
+        store.clearDialogs()
+      }
+      const result = await api.getDialogs(30, this._offsetId)
+      const list = (result && result.dialogs) || []
+      list.forEach(d => store.upsertDialog(d))
+      const all = store.get('dialogs') || []
+      this.dialogs = all.slice(0, 30).map(this._mapDialog)
+      this.hasMore = list.length >= 30
+      if (list.length > 0) {
+        // 取最后一条作为下次偏移
+        const last = list[list.length - 1]
+        this._offsetId = last.last_message_id || 0
+      }
+    } catch (e) {
+      this.showToast((e && e.msg) || '加载失败')
+    } finally {
+      this.loading = false
+    }
+  },
+
+  loadMore() {
+    this.loadDialogs(false)
+  },
+
+  openChat(item) {
+    const router = require('@system.router')
+    router.push({
+      uri: 'pages/chat',
+      params: { peer: item.peer, title: item.title }
+    })
+  },
+
+  openSetting() {
+    const router = require('@system.router')
+    router.push({ uri: 'pages/setting' })
+  },
+
+  showToast(msg) {
+    const prompt = require('@system.prompt')
+    prompt.showToast({ message: msg, duration: 1500 })
+  }
+}
+</script>

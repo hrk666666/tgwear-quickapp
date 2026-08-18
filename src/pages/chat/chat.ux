@@ -1,0 +1,409 @@
+<import name="input-method" src="../../components/InputMethod/InputMethod.ux"></import>
+
+<template>
+  <div class="page">
+    <!-- 顶部 header -->
+    <image src="/common/images/hd.png" static
+           style="position:absolute;left:0dp;top:0dp;width:212px;height:82dp;" />
+    <image src="/common/images/back.png" static @click="goBack"
+           style="position:absolute;left:8dp;top:24dp;width:34dp;height:34dp;" />
+    <text static style="position:absolute;top:36dp;left:46dp;width:158dp;font-size:22dp;font-weight:bold;color:#ffffff;text-overflow:ellipsis;lines:1;">{{title}}</text>
+
+    <!-- 消息列表 -->
+    <list class="msg-list" id="msgList" style="top:82dp;height:{{hideKeyboard ? 298 : 143}}dp;">
+      <!-- 加载更多 -->
+      <list-item if="{{hasMore && messages.length > 0}}" @click="loadMore" class="load-more-item">
+        <text style="font-size:14dp;color:rgba(255,255,255,0.6);">加载更多</text>
+      </list-item>
+
+      <!-- 消息条目 -->
+      <list-item class="msg-row" for="{{messages}}">
+        <div class="msg-bubble {{$item.out ? 'msg-out' : 'msg-in'}}">
+          <text class="msg-text">{{$item.text}}</text>
+        </div>
+      </list-item>
+
+      <!-- 空状态 -->
+      <list-item if="{{messages.length === 0 && !loading}}" class="empty-item">
+        <text style="font-size:14dp;color:rgba(255,255,255,0.4);">暂无消息</text>
+      </list-item>
+
+      <!-- 加载中 -->
+      <list-item if="{{loading && messages.length === 0}}" class="empty-item">
+        <text style="font-size:14dp;color:rgba(255,255,255,0.6);">加载中...</text>
+      </list-item>
+    </list>
+
+    <!-- 输入栏（键盘隐藏时显示） -->
+    <div class="input-bar" if="{{hideKeyboard}}">
+      <div class="input-preview" @click="openKeyboard">
+        <text class="input-text" if="{{draft}}">{{draft}}</text>
+        <text class="input-placeholder" else>输入消息...</text>
+      </div>
+      <div class="send-btn" @click="send">
+        <text class="send-text">发送</text>
+      </div>
+    </div>
+
+    <!-- 自定义键盘（screentype 根据设备形状动态切换） -->
+    <input-method
+      hide="{{hideKeyboard}}"
+      keyboardtype.static="QWERTY"
+      vibratemode.static="short"
+      screentype="{{kbScreenType}}"
+      @complete="onInput"
+      @delete="onDelete"
+      @visibilityChange="onVisibilityChange" />
+  </div>
+</template>
+
+<style>
+.page {
+  width: 212px;
+  height: 480dp;
+  background-color: #000000;
+}
+.msg-list {
+  position: absolute;
+  left: 0dp;
+  width: 212px;
+  padding: 6dp 8dp;
+}
+.msg-row {
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 6dp;
+  background-color: transparent;
+}
+.msg-bubble {
+  max-width: 168dp;
+  padding: 8dp 12dp;
+  border-radius: 14dp;
+  background-color: #262626;
+}
+.msg-out {
+  align-self: flex-end;
+  background-color: #2ea0ff;
+}
+.msg-in {
+  align-self: flex-start;
+  background-color: #262626;
+}
+.msg-text {
+  font-size: 16dp;
+  color: #ffffff;
+  lines: 6;
+}
+.empty-item {
+  width: 100%;
+  align-items: center;
+  flex-direction: column;
+  padding: 40dp 0;
+  background-color: transparent;
+}
+.load-more-item {
+  width: 100%;
+  height: 40dp;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+}
+.input-bar {
+  position: absolute;
+  left: 0dp;
+  top: 380dp;
+  width: 212px;
+  height: 100dp;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 8dp;
+  background-color: #000000;
+  border-top-color: rgba(255,255,255,0.08);
+  border-top-width: 1dp;
+}
+.input-preview {
+  flex: 1;
+  height: 44dp;
+  background-color: #262626;
+  border-radius: 22dp;
+  padding: 0 14dp;
+  align-items: flex-start;
+  justify-content: center;
+  margin-right: 8dp;
+}
+.input-text {
+  font-size: 16dp;
+  color: #ffffff;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+.input-placeholder {
+  font-size: 16dp;
+  color: rgba(255,255,255,0.4);
+}
+.send-btn {
+  width: 60dp;
+  height: 44dp;
+  background-color: #2ea0ff;
+  border-radius: 22dp;
+  align-items: center;
+  justify-content: center;
+}
+.send-text {
+  font-size: 16dp;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* 圆屏适配：466dp 等圆形手表 */
+@media (shape: circle) {
+  .msg-bubble {
+    max-width: 320dp;
+  }
+}
+
+/* 胶囊屏适配 */
+@media (shape: pill-shaped) {
+  .msg-bubble {
+    max-width: 240dp;
+  }
+}
+</style>
+
+<script>
+import api from '../../utils/api'
+import store from '../../utils/store'
+import { nowTimeString } from '../../utils/format'
+
+let messageHandler = null
+
+export default {
+  data: {
+    peer: '',
+    title: '',
+    nowTime: '',
+    messages: [],
+    draft: '',
+    hideKeyboard: true,
+    kbScreenType: 'rect',
+    loading: false,
+    hasMore: false,
+    _offsetId: 0,
+    _sending: false
+  },
+
+  onInit() {
+    // 接收路由参数
+    const router = require('@system.router')
+    const params = (router && router.getParams && router.getParams()) || {}
+    this.peer = params.peer || ''
+    this.title = params.title || '会话'
+    this.nowTime = nowTimeString()
+
+    // 检测屏幕形状以决定 InputMethod 的 screentype
+    this._detectScreenShape()
+
+    // 用 store 中的已有消息填充
+    this.messages = (store.getDialog(this.peer) || []).slice().map(this._mapMsg)
+
+    this._setupMessageHandler()
+  },
+
+  _detectScreenShape() {
+    try {
+      const device = require('@system.device')
+      device.getInfo({
+        success: (ret) => {
+          if (ret && ret.screenShape === 'circle') {
+            this.kbScreenType = 'circle'
+          } else if (ret && ret.screenShape === 'pill-shaped') {
+            this.kbScreenType = 'pill-shaped'
+          } else {
+            this.kbScreenType = 'rect'
+          }
+        },
+        fail: () => {
+          this.kbScreenType = 'rect'
+        }
+      })
+    } catch (e) {
+      this.kbScreenType = 'rect'
+    }
+  },
+
+  onShow() {
+    this.nowTime = nowTimeString()
+    // 首次拉取
+    if (this.messages.length === 0) {
+      this.loadHistory(true)
+    } else {
+      // 已有缓存，标记已读到末尾
+      const last = this.messages[this.messages.length - 1]
+      if (last && last.id) {
+        api.markRead(this.peer, last.id).catch(() => {})
+      }
+      this._scrollToBottom()
+    }
+  },
+
+  onDestroy() {
+    if (messageHandler) {
+      messageHandler()
+      messageHandler = null
+    }
+  },
+
+  _setupMessageHandler() {
+    if (messageHandler) messageHandler()
+    messageHandler = api.on('update.newMessage', (data) => {
+      if (!data || data.peer !== this.peer) return
+      const msg = data.message
+      if (!msg) return
+      // 已存在则跳过
+      const exists = this.messages.some(m => m.id === msg.id)
+      if (exists) return
+      this.messages.push(this._mapMsg(msg))
+      // 标记已读
+      api.markRead(this.peer, msg.id).catch(() => {})
+      this._scrollToBottom()
+    })
+  },
+
+  _mapMsg(m) {
+    return {
+      id: m.id,
+      out: !!m.out,
+      text: m.text || (m.sticker ? '[' + (m.sticker.emoji || '贴纸') + ']' : '[消息]'),
+      date: m.date
+    }
+  },
+
+  _scrollToBottom() {
+    const el = this.$element('msgList')
+    if (el && el.scrollTo) {
+      // 异步确保渲染完成
+      setTimeout(() => {
+        try { el.scrollTo({ bottom: true }) } catch (e) {}
+      }, 50)
+    }
+  },
+
+  async loadHistory(reset) {
+    if (this.loading) return
+    this.loading = true
+    try {
+      if (reset) {
+        this._offsetId = 0
+      }
+      const result = await api.getHistory(this.peer, 30, this._offsetId)
+      const list = (result && result.messages) || []
+      // 倒序返回时反转为时间正序
+      const mapped = list.slice().reverse().map(this._mapMsg)
+      if (reset) {
+        this.messages = mapped
+      } else {
+        // 去重后前置
+        const existingIds = new Set(this.messages.map(m => m.id))
+        const fresh = mapped.filter(m => !existingIds.has(m.id))
+        this.messages = [...fresh, ...this.messages]
+      }
+      store.appendDialog(this.peer, mapped, true)
+      this.hasMore = list.length >= 30
+      if (list.length > 0) {
+        // 取最早一条作为下次偏移
+        const first = list[0]
+        this._offsetId = first.id || 0
+      }
+      if (reset) {
+        this._scrollToBottom()
+        // 标记已读到末尾
+        const last = this.messages[this.messages.length - 1]
+        if (last && last.id) {
+          api.markRead(this.peer, last.id).catch(() => {})
+        }
+      }
+    } catch (e) {
+      this.showToast((e && e.msg) || '加载失败')
+    } finally {
+      this.loading = false
+    }
+  },
+
+  loadMore() {
+    this.loadHistory(false)
+  },
+
+  // 输入法相关
+  openKeyboard() {
+    this.hideKeyboard = false
+  },
+
+  onInput(evt) {
+    const content = evt && evt.detail && evt.detail.content
+    if (!content) return
+    if (this.draft.length >= 500) {
+      this.showToast('消息过长')
+      return
+    }
+    this.draft += content
+  },
+
+  onDelete() {
+    if (!this.draft) return
+    this.draft = this.draft.slice(0, -1)
+  },
+
+  onVisibilityChange(evt) {
+    const visible = evt && evt.detail && evt.detail.visible
+    if (!visible) {
+      this.hideKeyboard = true
+    }
+  },
+
+  async send() {
+    if (this._sending) return
+    const text = (this.draft || '').trim()
+    if (!text) {
+      this.showToast('请输入消息')
+      return
+    }
+    if (!this.peer) {
+      this.showToast('会话无效')
+      return
+    }
+    this._sending = true
+    try {
+      const result = await api.sendText(this.peer, text, 0)
+      // 乐观插入：若手机端未通过事件推送回来，先本地占位
+      const msg = (result && result.message) || {
+        id: (result && result.message_id) || Date.now(),
+        out: true,
+        text: text,
+        date: Math.floor(Date.now() / 1000)
+      }
+      const exists = this.messages.some(m => m.id === msg.id)
+      if (!exists) {
+        this.messages.push(this._mapMsg(msg))
+        store.appendDialog(this.peer, [msg], false)
+      }
+      this.draft = ''
+      this._scrollToBottom()
+    } catch (e) {
+      this.showToast((e && e.msg) || '发送失败')
+    } finally {
+      this._sending = false
+    }
+  },
+
+  goBack() {
+    const router = require('@system.router')
+    router.back()
+  },
+
+  showToast(msg) {
+    const prompt = require('@system.prompt')
+    prompt.showToast({ message: msg, duration: 1500 })
+  }
+}
+</script>
